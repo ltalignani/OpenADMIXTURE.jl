@@ -7,15 +7,41 @@
 # criterion (ADMIXTURE `-c`, default 3 iterations). The standard error of each
 # q_ik is the standard deviation of its bootstrap replicates.
 #
-# ADMIXTURE does not document its block length. The default here, the cube
-# root of the number of SNPs, is the usual rate for block bootstraps.
+# ADMIXTURE does not document its block length, but prints it: 10 Mb converted
+# to a number of SNPs with the SNP density of the data (`admixture_block`,
+# checked against ADMIXTURE 1.3.0 logs). The command line uses that rule; the
+# cube root of the number of SNPs (`default_block`) is the fallback when the
+# positions span less than two blocks, and the default of `bootstrap_se`.
 
 """
     default_block(J)
 
-Default bootstrap block length (in SNPs) for `J` SNPs: `round(cbrt(J))`.
+Bootstrap block length (in SNPs) for `J` SNPs when positions are unknown:
+`round(cbrt(J))`, the usual rate for block bootstraps.
 """
 default_block(J::Integer) = max(1, round(Int, cbrt(J)))
+
+"""
+    admixture_block(chroms, positions; mb=10)
+
+ADMIXTURE 1.3's bootstrap block length in SNPs: the number of SNPs in `mb`
+megabases at the data's density, `ceil(J * mb * 10^6 / span)`, where `span`
+adds up `max - min + 1` of the base-pair positions on each chromosome. When the
+data span less than two blocks (ADMIXTURE then crashes, or every replicate is
+the data itself), returns `default_block(J)` instead.
+"""
+function admixture_block(chroms::AbstractVector, positions::AbstractVector{<:Integer}; mb=10)
+    J = length(chroms)
+    length(positions) == J || throw(DimensionMismatch("chroms and positions differ in length"))
+    lo, hi = Dict{eltype(chroms), Int}(), Dict{eltype(chroms), Int}()
+    for (c, p) in zip(chroms, positions)
+        lo[c] = min(get(lo, c, p), p)
+        hi[c] = max(get(hi, c, p), p)
+    end
+    span = sum(hi[c] - lo[c] + 1 for c in keys(hi))
+    block = ceil(Int, J * (mb * 1e6) / span)
+    J >= 2block ? block : default_block(J)
+end
 
 """
     block_bootstrap_indices(chroms, block, rng)

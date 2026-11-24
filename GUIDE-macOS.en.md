@@ -153,7 +153,7 @@ the output directory before launching.
 | `-C ε` or `-C N` | stopping rule for the main fit: absolute change in log-likelihood < ε (0 < ε < 1), or exactly N iterations (integer) | ε = 1e-4, at most 1,000 iterations |
 | `-c ε` or `-c N` | same, for each bootstrap replicate | 3 iterations |
 | `-a qnN` | quasi-Newton acceleration with N secant conditions | 3 |
-| `--bootstrap-block=L` | bootstrap block length in SNPs (1 = resample SNPs independently) | cube root of the number of SNPs |
+| `--bootstrap-block=L` | bootstrap block length in SNPs (1 = resample SNPs independently) | number of SNPs in 10 Mb, as ADMIXTURE |
 | `-h`, `--help` | help | |
 
 Note that `-C 3` means "3 iterations" and `-C 0.001` means "stop when
@@ -317,9 +317,11 @@ that attempt are kept, outside git, in `/Users/loic/OpenADMIXTURE.jl/build/`.
   and the seed therefore have no effect on the fit; the seed only changes the
   CV fold assignment. The bootstrap writes a `.Q_se` of zeros.
 - **Bootstrap**: blocks of consecutive SNPs are resampled within each
-  chromosome (column 1 of the `.bim`). The default block length (cube root of
-  the number of SNPs) is our choice, because ADMIXTURE does not document its
-  own. If all SNPs are coded on chromosome `0`, blocks can span the boundary
+  chromosome (column 1 of the `.bim`). The default block length is
+  ADMIXTURE's: the number of SNPs in 10 Mb, from the positions in column 4
+  (54,051 SNPs over 355 Mb give blocks of 1,524 SNPs), and the standard errors
+  match ADMIXTURE's. Below 20 Mb in total, where ADMIXTURE fails, blocks fall
+  back to the cube root of the number of SNPs. If all SNPs are coded on chromosome `0`, blocks can span the boundary
   between two real chromosomes.
 - **CV stopping rule**: each fold starts from the full-data estimates, with the
   same stopping rule as the main fit (`-C`).

@@ -89,6 +89,27 @@ end
     @test length(unique(idx)) < 1000
 end
 
+@testset "default bootstrap block follows ADMIXTURE (10 Mb in SNPs)" begin
+    bb = OpenADMIXTURE.admixture_block
+    # 1000 SNPs over 2 chromosomes spanning 50 Mb each: 10 Mb holds 100 SNPs
+    chroms = vcat(fill("1", 500), fill("2", 500))
+    pos = vcat(round.(Int, range(1, 50_000_000; length=500)),
+               round.(Int, range(1, 50_000_000; length=500)))
+    @test bb(chroms, pos) == 100
+    # rounding is upward, as ADMIXTURE prints 1524 for 1523.39
+    @test bb(fill("1", 1000), collect(1:7000:6_993_001) .* 10) ==
+          ceil(Int, 1000 * 1e7 / (999 * 70_000 + 1))
+    # chromosomes need not be contiguous in the .bim
+    @test bb(vcat(fill("1", 250), fill("2", 500), fill("1", 250)),
+             vcat(pos[1:250], pos[501:1000], pos[251:500])) == 100
+    # a single chromosome of 35 Mb keeps the ADMIXTURE rule (3.5 blocks)
+    @test bb(fill("22", 3500), collect(1:10_000:35_000_000)) == 1001
+    # fewer than two blocks (ADMIXTURE crashes or gives zero SE): cube-root fallback
+    @test bb(fill("1", 5000), collect(1:5000)) == OpenADMIXTURE.default_block(5000)
+    @test bb(fill("1", 5000), zeros(Int, 5000)) == OpenADMIXTURE.default_block(5000)
+    @test bb(fill("1", 3), [1, 2, 3]) == 1
+end
+
 @testset "bootstrap standard errors" begin
     s, _, chroms = simulate(120, 2000, 3)
     d = fit(s, 3)

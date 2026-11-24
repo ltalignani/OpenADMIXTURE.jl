@@ -16,8 +16,10 @@ ADMIXTURE 1.3-compatible options:
   -c ε|N           minor termination for bootstrap replicates (default 3 iterations)
   -a qnN           quasi-Newton acceleration with N secant conditions (default 3)
 Extensions:
-  --bootstrap-block=L   bootstrap block length in SNPs (default cube root of the
-                        number of SNPs; 1 = resample SNPs independently)
+  --bootstrap-block=L   bootstrap block length in SNPs (default: the number of
+                        SNPs in 10 Mb, as ADMIXTURE; cube root of the number of
+                        SNPs if the data span less than 20 Mb; 1 = resample
+                        SNPs independently)
   -h, --help       show this help
 
 Not supported yet: --supervised, -P (projection), -m, -a none, -l, -e, --haploid,
@@ -130,8 +132,11 @@ function _write_matrix(path, M::AbstractMatrix)
     end
 end
 
-# Chromosome of each SNP, from the first column of the .bim file.
-_chromosomes(bim) = [first(split(l)) for l in eachline(bim) if !isempty(strip(l))]
+# Chromosome and base-pair position of each SNP (columns 1 and 4 of the .bim file).
+function _chrom_pos(bim)
+    rows = [split(l) for l in eachline(bim) if !isempty(strip(l))]
+    String.(first.(rows)), [parse(Int, r[4]) for r in rows]
+end
 
 """
     main(args=ARGS) -> Int
@@ -176,8 +181,8 @@ function main(args=ARGS)
     _write_matrix(out * "P", permutedims(d.p))
 
     if o.bootstrap > 0
-        chroms = _chromosomes(base * ".bim")
-        block = something(o.block, default_block(length(chroms)))
+        chroms, positions = _chrom_pos(base * ".bim")
+        block = something(o.block, admixture_block(chroms, positions))
         println("Bootstrapping: $(o.bootstrap) replicates, blocks of $block SNP(s)")
         t = @elapsed se = bootstrap_se(g, o.K, d.q, d.p; B=o.bootstrap, chroms=chroms,
             block=block, rng=StableRNG(o.seed), minor_iter=o.minor_iter,

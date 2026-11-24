@@ -156,7 +156,7 @@ faut faire un `cd` vers le dossier de sortie avant le lancement.
 | `-C ε` ou `-C N` | arrêt de l'ajustement principal : variation absolue de log-vraisemblance < ε (0 < ε < 1), ou exactement N itérations (entier) | ε = 1e-4, au plus 1 000 itérations |
 | `-c ε` ou `-c N` | même chose pour chaque réplicat du bootstrap | 3 itérations |
 | `-a qnN` | accélération quasi-Newton à N conditions de sécante | 3 |
-| `--bootstrap-block=L` | longueur des blocs du bootstrap, en SNP (1 = SNP rééchantillonnés indépendamment) | racine cubique du nombre de SNP |
+| `--bootstrap-block=L` | longueur des blocs du bootstrap, en SNP (1 = SNP rééchantillonnés indépendamment) | nombre de SNP dans 10 Mb, comme ADMIXTURE |
 | `-h`, `--help` | aide | |
 
 Attention, `-C 3` signifie « 3 itérations » et `-C 0.001` « arrêt quand
@@ -321,9 +321,12 @@ Les scripts de cette tentative sont conservés dans
   seulement la répartition des plis de CV. Le bootstrap écrit un `.Q_se` nul.
 
 - **Bootstrap** : blocs de SNP consécutifs rééchantillonnés à l'intérieur de
-  chaque chromosome (colonne 1 du `.bim`). La longueur par défaut (racine cubique
-  du nombre de SNP) est notre choix : ADMIXTURE ne documente pas la sienne. Si
-  tous les SNP sont codés sur le chromosome `0`, les blocs peuvent chevaucher la
+  chaque chromosome (colonne 1 du `.bim`). La longueur par défaut est celle
+  d'ADMIXTURE : le nombre de SNP contenus dans 10 Mb, d'après les positions de
+  la colonne 4 (54 051 SNP sur 355 Mb donnent des blocs de 1 524 SNP). Les
+  erreurs standard sont alors les mêmes qu'avec ADMIXTURE. Si les SNP couvrent
+  moins de 20 Mb au total, cas où ADMIXTURE plante, les blocs reprennent la
+  racine cubique du nombre de SNP. Si tous les SNP sont codés sur le chromosome `0`, les blocs peuvent chevaucher la
   frontière entre deux chromosomes réels.
 - **Arrêt de la CV** : chaque pli repart de l'estimation complète, avec le même
   critère d'arrêt que l'ajustement principal (`-C`).

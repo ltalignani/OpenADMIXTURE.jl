@@ -50,11 +50,14 @@ bin/openadmixture -j8 --cv=10 -B500 -s 12345 data.bed 3
 | `-C ε\|N` | stop when the log-likelihood changes by less than ε (default 1e-4, absolute) or after N iterations |
 | `-c ε\|N` | same, for bootstrap replicates (default 3 iterations) |
 | `-a qnN` | quasi-Newton acceleration with N secant conditions (default 3) |
-| `--bootstrap-block=L` | bootstrap block length in SNPs (default: cube root of the number of SNPs) |
+| `--bootstrap-block=L` | bootstrap block length in SNPs (default: the number of SNPs in 10 Mb, as ADMIXTURE) |
 
 Bootstrap resamples blocks of consecutive SNPs within each chromosome (read from
-the `.bim` file). ADMIXTURE does not document its block length, so the default
-here is a choice of this implementation.
+the `.bim` file). As in ADMIXTURE 1.3, the default block holds the number of
+SNPs found in 10 Mb at the data's density (SNP count × 10 Mb / summed span of
+the chromosomes, from the `.bim` positions), which gives the same standard
+errors as ADMIXTURE. If the data span less than 20 Mb, where ADMIXTURE fails,
+the cube root of the number of SNPs is used instead.
 
 Not supported yet: `--supervised`, `-P`, `-m`, `-a none`, `-l`, `-e`,
 `--haploid`, and `.ped`/`.geno` input (convert with `plink --make-bed`).
